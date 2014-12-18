@@ -1,5 +1,9 @@
 package com.schwappkopf.getlocation;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
@@ -11,6 +15,7 @@ import android.widget.TextView;
 import android.os.CountDownTimer;
 import android.util.Log;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +25,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import android.os.AsyncTask;
+import android.content.Intent;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.net.wifi.WifiManager;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiConfiguration;
+
+
 
 public class GetLocation extends Activity implements LocationListener{
     protected LocationManager locationManager;
@@ -29,14 +45,17 @@ public class GetLocation extends Activity implements LocationListener{
     double myLocationLng=0;
     double othLocationLat=0;
     double othLocationLng=0;
-    String myId;
+    String myId,myWifiStatus;
     TextView txtLat, txtTest;
     String status;
     String othLat,othLng;
+    String hname,hpass;
     protected String latitude,longitude;
     protected boolean gps_enabled,network_enabled;
+    List<ScanResult> wifiList;
     JSONObject user;
     Button btnColor;
+    boolean network;
 
     JSONParser jsonParser = new JSONParser();
 
@@ -51,11 +70,16 @@ public class GetLocation extends Activity implements LocationListener{
     private static final String TAG_LNG = "Lng";
     private static final String TAG_OTH_LAT = "OthLat";
     private static final String TAG_OTH_LNG = "OthLng";
+    private static final String TAG_HNAME = "hname";
+    private static final String TAG_HPASS = "hpass";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.get_location);
+
+        btnColor = (Button) findViewById(R.id.button);
+
         txtLat = (TextView) findViewById(R.id.textview1);
         txtTest = (TextView)findViewById(R.id.textView);
         btnColor = (Button)findViewById(R.id.button);
@@ -107,7 +131,7 @@ public class GetLocation extends Activity implements LocationListener{
 
     public void againGetStartGPSAndSendFile()
     {
-        new CountDownTimer(15000,1000)
+        new CountDownTimer(10000,1000)
         {
             @Override
             public void onTick(long millisUntilFinished)
@@ -131,13 +155,16 @@ public class GetLocation extends Activity implements LocationListener{
                 float distance = locationA.distanceTo(locationB);
                 txtTest.setText("Aranızdaki Mesafe:" + Float.toString(distance));
                 txtTest.refreshDrawableState();
-                if(distance<=50)
+                if(distance<=50 && distance!=0) //sıfır default value old için.
                 {
+                    btnColor.setEnabled(true);
+                    addListenerOnButton();
                     btnColor.setBackgroundResource(android.R.color.holo_green_dark);
 
                 }
                 else if(distance>50)
                 {
+                    btnColor.setEnabled(false);
                     btnColor.setBackgroundResource(android.R.color.holo_red_light);
 
                 }
@@ -147,6 +174,133 @@ public class GetLocation extends Activity implements LocationListener{
         }.start();
     }
 
+    public void addListenerOnButton() {
+
+
+
+        btnColor.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View arg0) {
+
+                network=isNetworkOnline();
+                if(!network)
+                {
+                    new AlertDialog.Builder(GetLocation.this)
+                            .setTitle("Bağlantı Hatası!")
+                            .setMessage("İnternet bağlantınızda bir sorun var...")
+                            .setPositiveButton("Tamam", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    GetLocation.this.finish();
+                                }
+                            })
+                            .show();
+                }
+                WifiManager wifi = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+                if (wifi.isWifiEnabled()){
+                //wifi is enabled
+                    WifiInfo wifiInfo = wifi.getConnectionInfo();
+                    myWifiStatus= wifiInfo.toString();
+                    if(hname==wifiInfo.getSSID())
+                    {
+                        //eğer doğru ağa bağlıysa
+                    }
+                    else
+                    {
+                       //daha bağlanmamışsa
+                                try{
+                                        WifiConfiguration conf = new WifiConfiguration();
+                                        conf.SSID = "\"" + hname + "\"";
+                                        conf.preSharedKey = "\"" + hpass + "\"";
+                                        //      conf.hiddenSSID = true;
+                                        //      conf.wepTxKeyIndex = 0;
+                                        //      conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
+                                        //      conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40);
+
+                                        conf.status = WifiConfiguration.Status.ENABLED;
+                                        conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
+                                        conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
+                                        conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
+                                        conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
+                                        conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
+                                        conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
+
+                                        int networkId = wifi.addNetwork(conf);
+                                        wifi.enableNetwork(networkId, true);
+
+
+                                }
+
+                                    catch(Exception e) {
+                                    }
+
+                                        //turn off wifi at first
+                                        WifiInfo info = wifi.getConnectionInfo ();
+                                        if(hname!=info.getSSID())
+                                        {
+                                        wifi.setWifiEnabled(false);
+                                        WifiConfiguration netConfig = new WifiConfiguration();
+
+                                        netConfig.SSID = "\"" + hname + "\"";
+                                        netConfig.hiddenSSID=true;
+                                        netConfig.preSharedKey = "\""+ hpass +"\"";
+                                        netConfig.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN);
+                                        netConfig.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
+                                        netConfig.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
+                                        netConfig.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
+
+                                        try{
+                                            Method method = wifi.getClass().getMethod("setWifiApEnabled", WifiConfiguration.class, Boolean.TYPE);
+                                            method.invoke(wifi, netConfig, true);
+
+                                        } catch (Exception e) {
+                                            Log.e(this.getClass().toString(), "", e);
+                                        }
+                                    }
+                                }
+                                // log results
+                     }
+
+
+
+
+            //check internet
+                //check wifi is open ?
+                    //if open, search the secret hotspot,
+                        //if there is not our hotspot, create the one
+                        //there is hotspot, connect to it
+                    //else, open wifi, and do other process
+
+
+
+            }
+
+        });
+
+    }
+
+
+
+    public boolean isNetworkOnline() {
+        boolean status=false;
+        try{
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo netInfo = cm.getNetworkInfo(0);
+            if (netInfo != null && netInfo.getState()==NetworkInfo.State.CONNECTED) {
+                status= true;
+            }else {
+                netInfo = cm.getNetworkInfo(1);
+                if(netInfo!=null && netInfo.getState()==NetworkInfo.State.CONNECTED)
+                    status= true;
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+            return false;
+        }
+        return status;
+
+    }
 
     class GetUserDetails extends AsyncTask<String, String, String> {
 
@@ -186,6 +340,8 @@ public class GetLocation extends Activity implements LocationListener{
                     user = userObj.getJSONObject(0);
                     othLat=user.getString(TAG_OTH_LAT);
                     othLng=user.getString(TAG_OTH_LNG);
+                    hname=user.getString(TAG_HNAME);
+                    hpass=user.getString(TAG_HPASS);
 
                     othLocationLat=Double.parseDouble(othLat);
                     othLocationLng=Double.parseDouble(othLng);
