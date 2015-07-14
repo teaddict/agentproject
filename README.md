@@ -2,7 +2,8 @@
 proje iş dersi için geliştirilen android uygulama.
 
 
-Projenin Özeti
+#####Projenin Özeti
+
 Projemiz, birbirleriyle görüşmek zorunda olan iki ajanın serüvenini ve bazı ince
 detayları ele alıyor. Kısaca hikayelemek istersek eğer, ajanlarımıza A ve B diyelim. A ve
 B birbirlerini tanımıyorlar, üstlerinden kendilerine görüşcekleri kişinin bi resmi iletiliyor
@@ -19,7 +20,8 @@ name ve pass ile gizli bi ağ oluşturuyor. Diğer ajanda bu gizli ağa bağland
 artık mesajlaşma servisine geçiş sağlanıyor. Bu servis online olarak çalışıyor ve program
 kapatıldıktan sonra telefondan tüm bilgiler siliniyor.
 
-Project Summary
+#####Project Summary
+
 It is about two agents and their adventures. If we want to tell the story briefly, we should call our agents A and B. 
 A and B dont know each other. Their seniors give them the picture of person with whom they should meet. 
 On the back of the picture is written the meeting coordinates and besides the id and password for instant messaging application.
