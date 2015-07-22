@@ -59,8 +59,8 @@ public class GetLocation extends Activity implements LocationListener{
 
     JSONParser jsonParser = new JSONParser();
 
-    private static final String url_update_user = "http://friendzonecheck.byethost6.com/agentproject/update.php";
-    private static final String url_get_user = "http://friendzonecheck.byethost6.com/agentproject/get_user.php";
+    private static final String url_update_user = "your service";
+    private static final String url_get_user = "your service";
 
     // JSON Node names
     private static final String TAG_SUCCESS = "success";
